@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}{{ t.app_name }} — {{ t.nav_data }}{% endblock %}
+
+{% block body %}
+<div class="page-wrap">
+  <header class="app-header top-bar">
+    <span class="logo">{{ t.app_name }}</span>
+    <nav class="header-nav">
+      <a href="/scout/"     class="nav-btn">◉ {{ t.nav_scouting }}</a>
+      <a href="/analytics/" class="nav-btn">↗ {{ t.nav_analytics }}</a>
+      <a href="/data/"      class="nav-btn active">⇅ {{ t.nav_data }}</a>
+    </nav>
+  </header>
+
+  <main class="data-page">
+    <h1>{{ t.data_title }}</h1>
+    <p class="subtitle">{{ t.data_subtitle }}</p>
+
+    <div class="lang-switcher">
+      {{ t.language }}:
+      <a href="/set-lang/en" {% if lang == 'en' %}class="active"{% endif %}>EN</a>
+      <a href="/set-lang/it" {% if lang == 'it' %}class="active"{% endif %}>IT</a>
+    </div>
+
+    <!-- ── DB Backup ── -->
+    <section class="card">
+      <h2>🗄️ {{ t.export_db }}</h2>
+      <p>{{ t.export_db_desc }}</p>
+      <div class="btn-row">
+        <a href="/data/export/db" class="btn btn-primary" download>{{ t.download_db }}</a>
+      </div>
+    </section>
+
+    <!-- ── DB Restore ── -->
+    <section class="card">
+      <h2>🗄️ {{ t.import_db if t.import_db else 'Restore Database' }}</h2>
+      <p>{{ t.import_db_desc if t.import_db_desc else 'Replace the current database with a previously exported backup (.db file). This cannot be undone.' }}</p>
+      <input type="file" id="db-file" accept=".db" />
+      <button class="btn btn-danger" onclick="importDB()">
+        {{ t.import_btn if t.import_btn else 'Restore' }}
+      </button>
+      <pre id="db-result" class="result-box hidden"></pre>
+    </section>
+
+    <!-- ── CSV Export ── -->
+    <section class="card">
+      <h2>📤 {{ t.export }}</h2>
+      <p>{{ t.export_desc }}</p>
+      <div class="btn-row">
+        <a href="/data/export/players" class="btn btn-secondary" download>{{ t.download_players_csv }}</a>
+        <a href="/data/export/attacks" class="btn btn-secondary" download>{{ t.download_attacks_csv }}</a>
+      </div>
+    </section>
+
+    <!-- ── Players Import ── -->
+    <section class="card">
+      <h2>📥 {{ t.import_players }}</h2>
+      <p>{{ t.import_players_desc }}</p>
+      <input type="file" id="players-file" accept=".csv" />
+      <button class="btn btn-primary" onclick="importCSV('players')">{{ t.import_btn }}</button>
+      <pre id="players-result" class="result-box hidden"></pre>
+    </section>
+
+    <!-- ── Attacks Import ── -->
+    <section class="card">
+      <h2>📥 {{ t.import_attacks }}</h2>
+      <p>{{ t.import_attacks_desc }}</p>
+      <input type="file" id="attacks-file" accept=".csv" />
+      <button class="btn btn-primary" onclick="importCSV('attacks')">{{ t.import_btn }}</button>
+      <pre id="attacks-result" class="result-box hidden"></pre>
+    </section>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function importCSV(kind) {
+  const input = document.getElementById(kind + '-file');
+  const box   = document.getElementById(kind + '-result');
+  if (!input.files.length) { alert('Please select a CSV file first.'); return; }
+
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  box.classList.remove('hidden');
+  box.textContent = 'Uploading…';
+
+  try {
+    const resp = await fetch('/data/import/' + kind, { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (data.error) { box.textContent = '❌ ' + data.error; return; }
+    let msg = `✅  Imported: ${data.imported}   Skipped: ${data.skipped}`;
+    if (data.errors && data.errors.length)
+      msg += '\n\nRow errors:\n' + data.errors.join('\n');
+    box.textContent = msg;
+  } catch (err) {
+    box.textContent = '❌ Request failed: ' + err.message;
+  }
+}
+
+async function importDB() {
+  const input = document.getElementById('db-file');
+  const box   = document.getElementById('db-result');
+  if (!input.files.length) { alert('Please select a .db file first.'); return; }
+  if (!confirm('This will replace all current data. Are you sure?')) return;
+
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  box.classList.remove('hidden');
+  box.textContent = 'Uploading…';
+
+  try {
+    const resp = await fetch('/data/import/db', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (data.error) { box.textContent = '❌ ' + data.error; return; }
+    box.textContent = '✅ ' + (data.message || 'Database restored successfully.');
+  } catch (err) {
+    box.textContent = '❌ Request failed: ' + err.message;
+  }
+}
+</script>
+{% endblock %}

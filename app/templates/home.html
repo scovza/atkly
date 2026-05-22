@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ t.app_name }}{% endblock %}
+
+{% block body %}
+<div class="home-page">
+
+    <header class="home-header">
+        <div class="logo">{{ t.app_name }}</div>
+        <div class="home-header-actions">
+            <span style="font-size:11px;color:var(--text-muted);">{{ t.language }}:
+                <a href="/set-lang/en" style="margin-left:4px;{% if lang == 'en' %}font-weight:bold;color:var(--accent);{% endif %}">EN</a>
+                <a href="/set-lang/it" style="margin-left:6px;{% if lang == 'it' %}font-weight:bold;color:var(--accent);{% endif %}">IT</a>
+            </span>
+        </div>
+    </header>
+
+    <main class="home-main">
+
+        <div class="home-hero">
+            <div class="home-logo-mark">◉</div>
+            <h1 class="home-title">{{ t.home_title }}</h1>
+            <p class="home-subtitle">{{ t.home_subtitle }}</p>
+        </div>
+
+        <div class="home-cards">
+
+            <a href="/scout/" class="home-card home-card-primary">
+                <div class="home-card-icon">◉</div>
+                <div class="home-card-content">
+                    <div class="home-card-title">{{ t.home_new_scout }}</div>
+                    <div class="home-card-desc">{{ t.home_new_scout_desc }}</div>
+                </div>
+                <div class="home-card-arrow">→</div>
+            </a>
+
+            <div class="home-divider">
+                <span>{{ t.home_or }}</span>
+            </div>
+
+            <div class="home-card home-card-secondary" id="home-import-card">
+                <div class="home-card-icon">⇅</div>
+                <div class="home-card-content">
+                    <div class="home-card-title">{{ t.home_load_scout }}</div>
+                    <div class="home-card-desc">{{ t.home_load_scout_desc }}</div>
+                </div>
+                <div class="home-card-arrow">↑</div>
+            </div>
+
+        </div>
+
+        <div class="home-footer-links">
+            <a href="/analytics/" class="home-footer-link">↗ {{ t.nav_analytics }}</a>
+            <a href="/data/" class="home-footer-link">⇅ {{ t.nav_data }}</a>
+        </div>
+
+    </main>
+
+    <!-- Hidden DB import input -->
+    <input type="file" id="db-import-input" accept=".db,.sqlite,.sqlite3" style="display:none;" />
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const importCard = document.getElementById('home-import-card');
+    const importInput = document.getElementById('db-import-input');
+
+    if (importCard) {
+        importCard.style.cursor = 'pointer';
+        importCard.addEventListener('click', () => importInput.click());
+    }
+
+    if (importInput) {
+        importInput.addEventListener('change', async () => {
+            if (!importInput.files.length) return;
+            const file = importInput.files[0];
+            const fd = new FormData();
+            fd.append('file', file);
+
+            const toast = showHomeToast('Importing…', '');
+            try {
+                const resp = await fetch('/data/import/db', { method: 'POST', body: fd });
+                const data = await resp.json();
+                if (data.error) {
+                    showHomeToast('❌ ' + data.error, 'error');
+                } else {
+                    showHomeToast('✅ Database loaded', 'success');
+                    setTimeout(() => window.location.href = '/scout/', 800);
+                }
+            } catch (err) {
+                showHomeToast('❌ Import failed: ' + err.message, 'error');
+            }
+            importInput.value = '';
+        });
+    }
+
+    function showHomeToast(msg, type) {
+        let t = document.querySelector('.toast');
+        if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+        t.textContent = msg;
+        t.className = 'toast' + (type ? ' ' + type : '');
+        t.classList.add('show');
+        if (type !== '') setTimeout(() => t.classList.remove('show'), 3000);
+        return t;
+    }
+})();
+</script>
+{% endblock %}

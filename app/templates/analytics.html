@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}{{ t.app_name }} — {{ t.nav_analytics }}{% endblock %}
+
+{% block body %}
+<div class="analytics-page">
+
+  <header class="app-header">
+    <div class="logo">{{ t.app_name }}</div>
+    <nav class="header-nav">
+      <a href="/scout/"      class="nav-btn">◉ {{ t.nav_scouting }}</a>
+      <a href="/analytics/" class="nav-btn active">↗ {{ t.nav_analytics }}</a>
+      <a href="/data/"      class="nav-btn">⇅ {{ t.nav_data }}</a>
+    </nav>
+  </header>
+
+  <!-- FILTERS SIDEBAR -->
+  <aside class="filter-panel">
+    <div class="filter-panel-title">{{ t.filters }}</div>
+
+    <div class="filter-group">
+      <div class="filter-label">{{ t.filter_attacker }}</div>
+      <select id="f-attacker" class="filter-select"><option value="">{{ t.filter_all }}</option></select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">{{ t.filter_setter }}</div>
+      <select id="f-setter" class="filter-select"><option value="">{{ t.filter_all }}</option></select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">{{ t.filter_rotation }}</div>
+      <select id="f-rotation" class="filter-select">
+        <option value="">{{ t.filter_all }}</option>
+        {% for r in range(1,7) %}<option value="{{ r }}">Rot. {{ r }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">{{ t.filter_ft_quality }}</div>
+      <select id="f-ft" class="filter-select">
+        <option value="">{{ t.filter_all }}</option>
+        <option value="perfect">{{ t.ft_perfect }}</option>
+        <option value="positive">{{ t.ft_positive }}</option>
+        <option value="exclamative">{{ t.ft_off_net }}</option>
+        <option value="negative">{{ t.ft_negative }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">{{ t.filter_set_speed }}</div>
+      <select id="f-speed" class="filter-select">
+        <option value="">{{ t.filter_all }}</option>
+        <option value="quick">{{ t.set_quick }}</option>
+        <option value="medium">{{ t.set_medium }}</option>
+        <option value="high">{{ t.set_high }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">{{ t.filter_attack_type }}</div>
+      <select id="f-atype" class="filter-select">
+        <option value="">{{ t.filter_all }}</option>
+        <option value="power">{{ t.at_power }}</option>
+        <option value="tip">{{ t.at_tip }}</option>
+        <option value="roll-shot">{{ t.at_roll }}</option>
+        <option value="push">{{ t.at_line }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">{{ t.filter_zone }}</div>
+      <select id="f-zone" class="filter-select">
+        <option value="">{{ t.filter_all_f }}</option>
+        {% for z in [1,2,3,4,5,6] %}<option value="{{ z }}">Zone {{ z }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">{{ t.filter_result }}</div>
+      <select id="f-kill" class="filter-select">
+        <option value="">{{ t.filter_all }}</option>
+        <option value="true">{{ t.res_kill }}</option>
+        <option value="false">{{ t.res_no_kill }}</option>
+      </select>
+    </div>
+
+    <button class="apply-filters-btn" id="apply-filters">{{ t.apply_filters }}</button>
+    <button class="reset-filters-btn" id="reset-filters">{{ t.reset_filters if t.reset_filters else 'Reset Filters' }}</button>
+
+    <div class="filter-lang-row">
+      {{ t.language }}:
+      <a href="/set-lang/en" {% if lang == 'en' %}style="font-weight:bold;color:var(--accent);"{% endif %}>EN</a>
+      <a href="/set-lang/it" {% if lang == 'it' %}style="font-weight:bold;color:var(--accent);"{% endif %}>IT</a>
+    </div>
+  </aside>
+
+  <!-- TRAJECTORIES COURT COLUMN -->
+  <div class="analytics-traj-col">
+    <div class="analytics-col-header">
+      <span class="analytics-col-title">{{ t.chart_trajectories }}</span>
+      <span class="chart-legend">
+        <span><span class="legend-dot" style="background:#00e87a"></span>Kill</span>
+        <span><span class="legend-dot" style="background:#9933ff"></span>Play</span>
+        <span><span class="legend-dot" style="background:#ff3333"></span>Out</span>
+        <span><span class="legend-dot" style="background:#991111"></span>Blocked</span>
+      </span>
+    </div>
+    <div class="analytics-court-wrap">
+      <canvas id="traj-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- HEATMAP COURT COLUMN -->
+  <div class="analytics-heat-col">
+    <div class="analytics-col-header">
+      <span class="analytics-col-title">{{ t.chart_heatmap }}</span>
+      <span class="chart-legend">
+        <span><span class="legend-dot" style="background:#00e87a"></span>Kill</span>
+        <span><span class="legend-dot" style="background:#9933ff"></span>Play</span>
+        <span><span class="legend-dot" style="background:#ff3333"></span>Out</span>
+        <span><span class="legend-dot" style="background:#991111"></span>Blocked</span>
+      </span>
+    </div>
+    <div class="analytics-court-wrap">
+      <canvas id="heatmap-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- STATS SIDEBAR -->
+  <aside class="analytics-stats-col">
+    <div class="stats-scroll">
+
+      <!-- Summary stats -->
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">{{ t.stat_total }}</div>
+        <div class="stats-grid">
+          <div class="stat-card full-width">
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-label">{{ t.stat_total }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" style="color:var(--res-kill)" id="stat-kills">—</div>
+            <div class="stat-label">{{ t.stat_kills }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" style="color:var(--res-kill)" id="stat-killpct">—</div>
+            <div class="stat-label">{{ t.stat_kill_pct }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" style="color:var(--res-blocked)" id="stat-blocked">—</div>
+            <div class="stat-label">{{ t.stat_blocked }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" style="color:var(--res-blocked)" id="stat-blockpct">—</div>
+            <div class="stat-label">{{ t.stat_block_pct }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attack distribution by zone -->
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">{{ t.chart_zone }}</div>
+        <div id="zone-chart" class="bar-chart"></div>
+      </div>
+
+      <!-- Attack type distribution -->
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">{{ t.chart_type }}</div>
+        <div id="type-chart" class="bar-chart"></div>
+      </div>
+
+      <!-- First touch distribution -->
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">{{ t.chart_ft }}</div>
+        <div id="ft-chart" class="bar-chart"></div>
+      </div>
+
+      <!-- Setter distribution -->
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">{{ t.section_setter }}</div>
+        <div id="setter-dist-container"></div>
+      </div>
+
+    </div>
+  </aside>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const COURT_LABELS = {
+  attack_team:  {{ t.attack_team  | tojson }},
+  defense_team: {{ t.defense_team | tojson }},
+};
+</script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

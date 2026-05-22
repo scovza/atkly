@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}{{ t.app_name }} — Scout{% endblock %}
+
+{% block body %}
+    <div class="scout-page">
+
+        <header class="app-header">
+            <div class="logo">{{ t.app_name }}</div>
+            <nav class="header-nav">
+                <a href="/scout/" class="nav-btn active">◉ {{ t.nav_scouting }}</a>
+                <a href="/analytics/" class="nav-btn">↗ {{ t.nav_analytics }}</a>
+                <a href="/data/" class="nav-btn">⇅ {{ t.nav_data }}</a>
+            </nav>
+        </header>
+
+        <!-- LEFT SIDEBAR: players + action log -->
+        <aside class="sidebar-left">
+            <div class="sidebar-section" style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="sidebar-label">{{ t.players }}</span>
+                <button id="open-player-modal" class="tag-btn" style="padding:4px 9px;font-size:11px;">+ {{ t.add_player }}</button>
+            </div>
+            <div id="player-list" class="player-list"></div>
+            <div class="log-header">
+                <span class="sidebar-label">{{ t.action_log }}</span>
+            </div>
+            <div id="action-log" class="action-log"></div>
+        </aside>
+
+        <!-- CENTER: volleyball court -->
+        <main class="court-area">
+            <div class="mode-bar" id="mode-bar">
+                <span class="mode-step active" data-step="0">① {{ t.step_first_touch }}</span>
+                <span class="mode-step" data-step="1">② {{ t.step_set }}</span>
+                <span class="mode-step" data-step="2">③ {{ t.step_approach }}</span>
+                <span class="mode-step" data-step="3">④ {{ t.step_contact }}</span>
+                <span class="mode-step" data-step="4">⑤ {{ t.step_trajectory }}</span>
+            </div>
+            <div class="court-wrap">
+                <svg id="court-svg"></svg>
+            </div>
+        </main>
+
+        <!-- VIDEO COLUMN -->
+        <div class="video-column">
+            <div class="video-column-header">
+                <span class="sidebar-label">▶ {{ t.video }}</span>
+
+            </div>
+            <div class="video-url-row">
+                <input type="text" id="video-url-input" class="video-input" placeholder="{{ t.video_url_placeholder }}"/>
+                <button id="video-load-btn" class="tag-btn" style="padding:7px 12px;white-space:nowrap;flex-shrink:0;">{{ t.video_load }}</button>
+            </div>
+            <div id="video-ts-display" class="video-ts-display"></div>
+            <div class="video-frame-wrap" id="video-embed">
+                <div class="video-placeholder">{{ t.video_placeholder }}</div>
+            </div>
+            <div class="video-placeholder-area" id="video-placeholder-area">
+                <div class="video-placeholder">{{ t.video_placeholder }}</div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR: scouting controls -->
+        <aside class="sidebar-right">
+
+            <div class="right-scroll">
+
+                <!-- Setter -->
+                <div class="tag-group">
+                    <div class="sidebar-label">{{ t.setter }}</div>
+                    <select id="setter-select" class="setter-select"></select>
+                    <button class="tag-btn" id="btn-generic-setter" style="margin-top:6px;width:100%;font-size:12px;">
+                        👤 {{ t.generic_setter }}
+                    </button>
+                </div>
+
+                <!-- Rotation -->
+                <div class="tag-group">
+                    <div class="sidebar-label">{{ t.rotation }}</div>
+                    <div class="rotation-grid">
+                        {% for r in [1,6,5,4,3,2] %}
+                            <button class="rot-btn" data-rot="{{ r }}">{{ r }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- First touch -->
+                <div class="tag-group">
+                    <div class="sidebar-label">{{ t.first_touch_quality }}</div>
+                    <div class="tag-row">
+                        <button class="tag-btn" data-ft="perfect">{{ t.ft_perfect }}</button>
+                        <button class="tag-btn" data-ft="positive">{{ t.ft_positive }}</button>
+                        <button class="tag-btn" data-ft="exclamative">{{ t.ft_off_net }}</button>
+                        <button class="tag-btn" data-ft="negative">{{ t.ft_negative }}</button>
+                    </div>
+                </div>
+
+                <!-- Set speed -->
+                <div class="tag-group">
+                    <div class="sidebar-label">{{ t.set_speed }}</div>
+                    <div class="tag-row">
+                        <button class="tag-btn" data-speed="quick">{{ t.set_quick }}</button>
+                        <button class="tag-btn" data-speed="medium">{{ t.set_medium }}</button>
+                        <button class="tag-btn" data-speed="high">{{ t.set_high }}</button>
+                    </div>
+                </div>
+
+                <!-- Attack type -->
+                <div class="tag-group">
+                    <div class="sidebar-label">{{ t.attack_type }}</div>
+                    <div class="tag-row">
+                        <button class="tag-btn" data-atype="power">{{ t.at_power }}</button>
+                        <button class="tag-btn" data-atype="tip">{{ t.at_tip }}</button>
+                        <button class="tag-btn" data-atype="roll-shot">{{ t.at_roll }}</button>
+                        <button class="tag-btn" data-atype="push">{{ t.at_line }}</button>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="tag-group">
+                    <div class="sidebar-label">{{ t.result }}</div>
+                    <div class="tag-row">
+                        <button class="tag-btn t-kill"      id="btn-kill"      style="flex:1;">{{ t.res_kill }}</button>
+                        <button class="tag-btn t-block"     id="btn-blocked"   style="flex:1;">{{ t.res_blocked }}</button>
+                        <button class="tag-btn t-block-out" id="btn-block-out" style="flex:1;">{{ t.res_block_out }}</button>
+                        <button class="tag-btn t-out"       id="btn-out"       style="flex:1;">{{ t.res_out }}</button>
+                    </div>
+                    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">{{ t.result_no_sel }}</div>
+                </div>
+
+                <!-- Notes -->
+                <div class="tag-group">
+                    <div class="sidebar-label">{{ t.notes }}</div>
+                    <textarea class="notes-input" id="notes-input" placeholder="{{ t.notes_placeholder }}" rows="2"></textarea>
+                </div>
+
+                <!-- Settings -->
+                <div class="tag-group settings-group">
+                    <div class="sidebar-label">{{ t.settings }}</div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-first-touch" checked>
+                        {{ t.setting_first_touch }}
+                    </label>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-approach" checked>
+                        {{ t.setting_approach }}
+                    </label>
+                    <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">
+                        {{ t.language }}:
+                        <a href="/set-lang/en" style="margin-left:5px;{% if lang == 'en' %}font-weight:bold;color:var(--accent);{% endif %}">EN</a>
+                        <a href="/set-lang/it" style="margin-left:6px;{% if lang == 'it' %}font-weight:bold;color:var(--accent);{% endif %}">IT</a>
+                    </div>
+                </div>
+
+            </div><!-- /right-scroll -->
+
+            <!-- Save / Clear -->
+            <div class="action-btns">
+                <button class="save-btn" id="save-btn">{{ t.save_attack }}</button>
+                <button class="clear-btn" id="clear-btn">{{ t.clear_ }}</button>
+            </div>
+
+        </aside>
+
+    </div><!-- /scout-page -->
+
+    <!-- Player modal -->
+    <div id="player-modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <h3>{{ t.add_player_title }}</h3>
+            <form id="player-form">
+                <div class="form-row">
+                    <label>{{ t.jersey_number }}</label>
+                    <input type="number" id="f-number" class="form-input" required min="1" max="99"/>
+                </div>
+                <div class="form-row">
+                    <label>{{ t.surname }}</label>
+                    <input type="text" id="f-surname" class="form-input" required/>
+                </div>
+                <div class="form-row">
+                    <label>{{ t.first_name }}</label>
+                    <input type="text" id="f-name" class="form-input" required/>
+                </div>
+                <div class="form-row">
+                    <label>{{ t.role }}</label>
+                    <select id="f-role" class="form-select" required>
+                        <option value="">{{ t.role_placeholder }}</option>
+                        <option value="Setter">{{ t.role_setter }}</option>
+                        <option value="Outside Hitter">{{ t.role_outside }}</option>
+                        <option value="Opposite">{{ t.role_opposite }}</option>
+                        <option value="Middle Blocker">{{ t.role_middle }}</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>{{ t.height_cm }}</label>
+                    <input type="number" id="f-height" class="form-input" min="150" max="230" placeholder="{{ t.height_placeholder }}"/>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="modal-close-btn" class="btn-secondary">{{ t.cancel }}</button>
+                    <button type="submit" class="btn-primary">{{ t.add }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const LABELS = {
+            steps:      {{ t.js_steps      | tojson }},
+            ft:         {{ t.js_ft         | tojson }},
+            speed:      {{ t.js_speed      | tojson }},
+            atype:      {{ t.js_atype      | tojson }},
+            result:     {{ t.js_result     | tojson }},
+            js_generic: {{ t.js_generic    | tojson }},
+            js_attacker: {{ t.js_attacker  | tojson }},
+            js_setter:   {{ t.js_setter    | tojson }},
+            js_rotation: {{ t.js_rotation  | tojson }},
+            js_firstTouch: {{ t.js_firstTouch | tojson }},
+            js_setSpeed: {{ t.js_setSpeed  | tojson }},
+            js_attackType: {{ t.js_attackType | tojson }},
+            js_notes:   {{ t.js_notes      | tojson }},
+            js_save:    {{ t.js_save       | tojson }},
+            js_cancel:  {{ t.js_cancel     | tojson }},
+            js_no_setter:  {{ t.js_no_setter  | tojson }},
+            js_no_players: {{ t.js_no_players | tojson }},
+            js_no_actions: {{ t.js_no_actions | tojson }},
+            js_select_attacker: {{ t.js_select_attacker | tojson }},
+            js_attack_saved:  {{ t.js_attack_saved  | tojson }},
+            js_save_failed:   {{ t.js_save_failed   | tojson }},
+            js_deleted:       {{ t.js_deleted       | tojson }},
+            js_delete_failed: {{ t.js_delete_failed | tojson }},
+            js_attack_updated: {{ t.js_attack_updated | tojson }},
+            js_update_failed:  {{ t.js_update_failed  | tojson }},
+            js_player_added:   {{ t.js_player_added   | tojson }},
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/court.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/scout.js') }}"></script>
+    <script>
+    // Sync video column with the original video panel logic in scout.js
+    // The video-embed div is now in the video-column; hide placeholder-area when active
+    (function() {
+        const embed = document.getElementById('video-embed');
+        const placeholderArea = document.getElementById('video-placeholder-area');
+        if (!embed || !placeholderArea) return;
+        const observer = new MutationObserver(() => {
+            if (embed.classList.contains('active')) {
+                placeholderArea.style.display = 'none';
+            } else {
+                placeholderArea.style.display = 'flex';
+            }
+        });
+        observer.observe(embed, { attributes: true, attributeFilter: ['class'] });
+    })();
+    </script>
+{% endblock %}
